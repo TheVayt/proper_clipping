@@ -112,8 +112,6 @@ local function attemptClip(id, clips)
 		ProperClipping.ClipPhysics(ent, norms, dists)
 	end
 	
-	hook.Run("ProperClippingClipAdded", ent, index)
-	
 	return true
 end
 
