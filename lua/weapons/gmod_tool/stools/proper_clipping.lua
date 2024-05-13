@@ -9,6 +9,11 @@ TOOL.ClientConVar.pitch = "0" -- float
 TOOL.ClientConVar.yaw = "0" -- float
 TOOL.ClientConVar.undo = "1" -- bool
 
+local MODE_HITPLANE = 0
+local MODE_POINT2POINT = 1
+local MODE_2HITPLANES = 2
+local MODE_PITCHYAW = 3
+
 if CLIENT then
 	local function updateInfo()
 		language.Add("Tool.proper_clipping.info1", "Hold " .. string.upper(input.LookupBinding("+walk") or "(+walk unbound)") .. " to invert the plane normal")
@@ -18,10 +23,10 @@ if CLIENT then
 	language.Add("Tool.proper_clipping.name", "Proper Clipping")
 	language.Add("Tool.proper_clipping.desc", "Visually or Physically clip entities")
 	
-	language.Add("Tool.proper_clipping.mode.0", "Hitplane")
-	language.Add("Tool.proper_clipping.mode.1", "Point to Point")
-	language.Add("Tool.proper_clipping.mode.2", "2 Hitplanes intersection")
-	language.Add("Tool.proper_clipping.mode.3", "Pitch and Yaw")
+	language.Add("Tool.proper_clipping.mode." .. MODE_HITPLANE, "Hitplane")
+	language.Add("Tool.proper_clipping.mode." .. MODE_POINT2POINT, "Point to Point")
+	language.Add("Tool.proper_clipping.mode." .. MODE_2HITPLANES, "2 Hitplanes intersection")
+	language.Add("Tool.proper_clipping.mode." .. MODE_PITCHYAW, "Pitch and Yaw")
 	
 	updateInfo()
 	language.Add("Tool.proper_clipping.right", "Clip entity")
@@ -87,10 +92,10 @@ if CLIENT then
 		
 		local pitch, yaw
 		local mode = vgui.Create("DComboBox", panel)
-		mode:AddChoice("#Tool.proper_clipping.mode.0", 0, true)
-		mode:AddChoice("#Tool.proper_clipping.mode.1", 1)
-		mode:AddChoice("#Tool.proper_clipping.mode.2", 2)
-		mode:AddChoice("#Tool.proper_clipping.mode.3", 3)
+		mode:AddChoice("#Tool.proper_clipping.mode." .. MODE_HITPLANE, MODE_HITPLANE, true)
+		mode:AddChoice("#Tool.proper_clipping.mode." .. MODE_POINT2POINT, MODE_POINT2POINT)
+		mode:AddChoice("#Tool.proper_clipping.mode." .. MODE_2HITPLANES, MODE_2HITPLANES)
+		mode:AddChoice("#Tool.proper_clipping.mode." .. MODE_PITCHYAW, MODE_PITCHYAW)
 		mode:SetText("#Tool.proper_clipping.mode." .. cvar_mode_val)
 		
 		function mode:OnSelect(_, _, val)
@@ -139,7 +144,7 @@ function TOOL:Think()
 	local op = math.floor(self:GetClientNumber("mode"))
 	local ply = self:GetOwner()
 	
-	if op == 3 then
+	if op == MODE_PITCHYAW then
 		local ent = ply:GetEyeTrace().Entity
 		if not IsValid(ent) then return end
 		if ent:IsPlayer() or ent:IsWorld() then return end
@@ -164,18 +169,18 @@ function TOOL:LeftClick(tr)
 	local op = self:GetOperation()
 	local stage = self:GetStage()
 	
-	if not (op == 1 and stage == 1 and ent:IsWorld()) then
+	if not (op == MODE_POINT2POINT and stage == 1 and ent:IsWorld()) then
 		if not ent or not ent:IsValid() then return end
 		if ent:IsPlayer() or ent:IsWorld() then return end
 	end
-	if op == 3 then return end
+	if op == MODE_PITCHYAW then return end
 	
 	if not IsFirstTimePredicted() then return true end
 	
-	if op == 0 then
+	if op == MODE_HITPLANE then
 		self.norm = tr.HitNormal
 		self.origin = tr.HitPos
-	elseif op == 1 then
+	elseif op == MODE_POINT2POINT then
 		if stage == 0 then
 			self.origin = tr.HitPos
 			self:SetStage(1)
@@ -183,7 +188,7 @@ function TOOL:LeftClick(tr)
 			self.norm = (tr.HitPos - self.origin):GetNormalized()
 			self:SetStage(0)
 		end
-	elseif op == 2 then
+	elseif op == MODE_2HITPLANES then
 		local pln1 = {origin = tr.HitPos, norm = tr.HitNormal}
 		local pln2 = self.plane or pln1
 		local lineNorm = pln1.norm:Cross(pln2.norm)
@@ -367,14 +372,14 @@ if CLIENT then
 		local op = tool:GetOperation()
 		local stage = tool:GetStage()
 		
-		if not (op == 1 and stage == 1 and ent:IsWorld()) then
+		if not (op == MODE_POINT2POINT and stage == 1 and ent:IsWorld()) then
 			if not ent or not ent:IsValid() then return end
 			if ent:IsPlayer() or ent:IsWorld() then return end
 		end
 		
 		--------------------
 		
-		if op == 1 and stage == 1 then
+		if op == MODE_POINT2POINT and stage == 1 then
 			-- Line mode
 			local norm = (tr.HitPos - origin):GetNormalized()
 			
